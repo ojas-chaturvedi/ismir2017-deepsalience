@@ -10,8 +10,8 @@ import csv
 
 from keras.models import Model
 from keras.layers import Dense, Input, Reshape, Lambda
-from keras.layers.convolutional import Conv2D
-from keras.layers.normalization import BatchNormalization
+from keras.layers import Conv2D
+from keras.layers import BatchNormalization
 from keras import backend as K
 from keras.models import load_model
 
