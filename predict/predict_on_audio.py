@@ -15,6 +15,8 @@ from keras.layers import BatchNormalization
 from keras import backend as K
 from keras.models import load_model
 
+import tensorflow as tf
+
 TASKS = ['bass', 'melody1', 'melody2', 'melody3', 'multif0', 'pitch', 'vocal']
 BINS_PER_OCTAVE = 60
 N_OCTAVES = 6
@@ -66,8 +68,12 @@ def compute_hcqt(audio_fpath):
     log_hcqt = ((1.0/80.0) * librosa.core.amplitude_to_db(
         np.abs(np.array(cqt_list)), ref=np.max)) + 1.0
 
+    # freq_grid = librosa.cqt_frequencies(
+    #     BINS_PER_OCTAVE*N_OCTAVES, FMIN, bins_per_octave=BINS_PER_OCTAVE
+    # )
+
     freq_grid = librosa.cqt_frequencies(
-        BINS_PER_OCTAVE*N_OCTAVES, FMIN, bins_per_octave=BINS_PER_OCTAVE
+        BINS_PER_OCTAVE * N_OCTAVES, fmin=FMIN, bins_per_octave=BINS_PER_OCTAVE
     )
 
     time_grid = librosa.core.frames_to_time(
@@ -110,7 +116,8 @@ def model_def():
     y5 = Conv2D(8, (70, 3), padding='same', activation='relu', name='distribute')(y4a)
     y5a = BatchNormalization()(y5)
     y6 = Conv2D(1, (1, 1), padding='same', activation='sigmoid', name='squishy')(y5a)
-    predictions = Lambda(lambda x: K.squeeze(x, axis=3))(y6)
+    # predictions = Lambda(lambda x: K.squeeze(x, axis=3))(y6)
+    predictions = Lambda(lambda x: tf.squeeze(x, axis=3), output_shape=lambda s: (s[0], s[1], s[2]))(y6)
 
     model = Model(inputs=inputs, outputs=predictions)
     model.compile(loss=bkld, metrics=['mse'], optimizer='adam')
@@ -142,7 +149,7 @@ def load_model(task):
     if task not in TASKS:
         raise ValueError("task must be one of {}".format(TASKS))
 
-    weights_path = os.path.join('weights', '{}.h5'.format(task))
+    weights_path = os.path.join('predict/weights', '{}.h5'.format(task))
     if not os.path.exists(weights_path):
         raise IOError(
             "Cannot find weights path {} for this task.".format(weights_path))
